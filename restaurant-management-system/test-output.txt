@@ -1,0 +1,23 @@
+--- 1. Seed Inventory ---
+Created Tomato: Tomato - Stock: 20
+Created Dough: Pizza Dough - Stock: 10
+
+--- 2. Create Menu Item (Margherita Pizza) ---
+Created Menu Item: Margherita Pizza - Price: $ 15
+
+--- 3. Create a Table && Reservation ---
+Created Table: 1 - Status: available
+Created Reservation for: John Doe
+New Table Status: reserved
+
+--- 4. Place an Order ---
+Ordering 3 Margherita Pizza...
+Order Placed! Total Amount: $ 45
+
+--- 5. Verify Inventory Deductions ---
+Tomato New Stock: 18.5 (Reorder Level: 5)
+Pizza Dough New Stock: 7 (Reorder Level: 2)
+
+--- 6. Check Reports ---
+Sales Report: { totalRevenue: 45, totalOrders: 1 }
+Alerts Report (Low Stock Items): []

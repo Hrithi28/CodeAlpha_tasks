@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Details - EventConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .event-detail-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 3rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .event-detail-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .meta-tags {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .meta-tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary-light);
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .description {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: 3rem;
+        }
+        .action-bar {
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">EventConnect</a>
+            <ul id="nav-links"></ul>
+        </nav>
+    </header>
+    
+    <main>
+        <div id="content" class="event-detail-card">
+            <div style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading event details...</div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateNavigation();
+            
+            const params = new URLSearchParams(window.location.search);
+            const eventId = params.get('id');
+            const contentDiv = document.getElementById('content');
+            
+            if(!eventId) {
+                contentDiv.innerHTML = '<div class="empty-state"><h3>Event not found</h3><a href="index.html" class="btn">Back to Events</a></div>';
+                return;
+            }
+            
+            try {
+                const res = await apiFetch(`/events/${eventId}/`);
+                if(!res.ok) throw new Error('Not found');
+                const event = await res.json();
+                
+                const date = new Date(event.date).toLocaleDateString(undefined, {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                
+                contentDiv.innerHTML = `
+                    <div class="event-detail-header">
+                        <h1>${event.title}</h1>
+                        <div class="meta-tags">
+                            <span class="meta-tag">📅 ${date}</span>
+                            <span class="meta-tag">📍 ${event.location}</span>
+                            <span class="meta-tag">👥 Capacity: ${event.capacity}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="description">${event.description.replace(/\n/g, '<br>')}</div>
+                    
+                    <div class="action-bar">
+                        <div id="status-msg"></div>
+                        <button id="register-btn" class="btn" style="max-width: 250px;">Register Now</button>
+                    </div>
+                `;
+                
+                document.getElementById('register-btn').addEventListener('click', async (e) => {
+                    const btn = e.target;
+                    const statusMsg = document.getElementById('status-msg');
+                    
+                    if(!getAuthToken()) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    
+                    btn.textContent = 'Registering...';
+                    btn.disabled = true;
+                    
+                    try {
+                        const regRes = await apiFetch(`/events/${eventId}/register/`, { method: 'POST' });
+                        const data = await regRes.json();
+                        
+                        if(regRes.ok) {
+                            statusMsg.innerHTML = '<span class="success-msg" style="margin:0;">Successfully registered!</span>';
+                            btn.textContent = 'Registered';
+                            btn.style.background = 'var(--success)';
+                        } else {
+                            statusMsg.innerHTML = `<span class="error-msg" style="margin:0;">${data.error || 'Registration failed'}</span>`;
+                            btn.textContent = 'Register Now';
+                            btn.disabled = false;
+                        }
+                    } catch(err) {
+                        statusMsg.innerHTML = '<span class="error-msg" style="margin:0;">Connection error</span>';
+                        btn.textContent = 'Register Now';
+                        btn.disabled = false;
+                    }
+                });
+                
+            } catch(e) {
+                contentDiv.innerHTML = '<div class="empty-state"><h3>Event not found</h3><a href="index.html" class="btn">Back to Events</a></div>';
+            }
+        });
+    </script>
+</body>
+</html>

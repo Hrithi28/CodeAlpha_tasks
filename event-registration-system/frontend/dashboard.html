@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EventConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">EventConnect</a>
+            <ul id="nav-links"></ul>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="dashboard-header">
+            <div>
+                <h1>Your Dashboard</h1>
+                <p style="color:var(--text-muted);">Manage your upcoming event registrations</p>
+            </div>
+            <a href="index.html" class="btn" style="width: auto;">Browse Events</a>
+        </div>
+        
+        <div id="registrations-list" class="grid">
+            <div style="text-align:center; grid-column: 1/-1; padding: 3rem; color: var(--text-muted);">
+                Loading registrations...
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            requireAuth();
+            updateNavigation();
+            
+            const loadRegistrations = async () => {
+                try {
+                    const res = await apiFetch('/registrations/');
+                    if(!res.ok) throw new Error('Failed to load');
+                    const registrations = await res.json();
+                    
+                    const container = document.getElementById('registrations-list');
+                    container.innerHTML = '';
+                    
+                    if(registrations.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1/-1;">
+                                <h3>No Registrations Yet</h3>
+                                <p style="margin-bottom: 2rem;">You haven't registered for any events.</p>
+                                <a href="index.html" class="btn" style="width:auto; display:inline-block;">Find Events</a>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    registrations.forEach(reg => {
+                        const event = reg.event_details;
+                        const date = new Date(event.date).toLocaleDateString(undefined, {
+                            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
+                        
+                        const el = document.createElement('div');
+                        el.className = 'card';
+                        el.innerHTML = `
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">Registered</span>
+                            <h3>${event.title}</h3>
+                            <p style="color:var(--primary-light); font-size:0.9rem;">📅 ${date}</p>
+                            <p>📍 ${event.location}</p>
+                            <button class="btn btn-danger" style="margin-top:1rem;" onclick="cancelRegistration(${reg.id})">Cancel Registration</button>
+                        `;
+                        container.appendChild(el);
+                    });
+                } catch(e) {
+                    document.getElementById('registrations-list').innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <h3 style="color:var(--danger)">Error loading dashboard</h3>
+                        </div>
+                    `;
+                }
+            };
+            
+            window.cancelRegistration = async (id) => {
+                if(confirm('Are you sure you want to cancel this registration?')) {
+                    try {
+                        const res = await apiFetch(`/registrations/${id}/`, { method: 'DELETE' });
+                        if(res.ok) {
+                            loadRegistrations(); // Reload list
+                        } else {
+                            alert('Failed to cancel registration');
+                        }
+                    } catch(e) {
+                        alert('Connection error');
+                    }
+                }
+            };
+            
+            loadRegistrations();
+        });
+    </script>
+</body>
+</html>
